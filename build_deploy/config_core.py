@@ -17,6 +17,7 @@ class Project(BaseModel):
     name: str
     version: str
     project_path: str
+    clean_target: Optional[bool] = False
     deploy_path: DeployPath
     clickonce_project_path: Optional[str]
 

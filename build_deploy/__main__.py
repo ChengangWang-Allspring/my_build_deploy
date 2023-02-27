@@ -1,8 +1,8 @@
-from build_deploy import app
+from build_deploy import menu
 
 
 def main():
-    return app.run()
+    return menu.run()
 
 
 if __name__ == '__main__':
