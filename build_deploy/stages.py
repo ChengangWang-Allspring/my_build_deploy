@@ -270,4 +270,20 @@ def deploy_files(project: Project, env: str):
             for name in dirs:
                 os.rmdir(os.path.join(path, name))
 
-    ## TODO copy files
+    if project.clickonce_project_path is not None:
+        source_bin = (
+            Path.cwd()
+            .joinpath(settings.WORK_DIR)
+            .joinpath(settings.WORK_CLICKONCE_TEMP_DIR)
+            .resolve()
+        )
+    else:
+        source_bin = (
+            Path.cwd()
+            .joinpath(settings.WORK_DIR)
+            .joinpath(settings.WORK_EXTRACT_DIR)
+            .joinpath('bin')
+            .resolve()
+        )
+    print(Fore.CYAN + f'Copying from "{source_bin}" to "{deploy_path}" ... ' + Fore.RESET)
+    shutil.copytree(source_bin, deploy_path, dirs_exist_ok=True)

@@ -33,7 +33,7 @@ def start_workflows(project: Project, env: str) -> None:
     stages.clickonce_manifest(project, env)
 
     """ deployment file copy """
-
+    stages.deploy_files(project, env)
 
 def main():
     pass
