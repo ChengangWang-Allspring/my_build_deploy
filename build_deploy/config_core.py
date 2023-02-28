@@ -21,6 +21,16 @@ class Project(BaseModel):
     deploy_path: DeployPath
     clickonce_project_path: Optional[str]
 
+    @root_validator
+    @classmethod
+    def artifact_name(cls, values: dict) -> dict:
+        """derive effective artifact name without zip extension"""
+
+        name = values.get('name')
+        version = values.get('version')
+        values['artifact_name'] = f'{name}_{version}'
+        return values
+
 
 class CicdConfig(BaseModel):
     ms_build_path: Optional[str]

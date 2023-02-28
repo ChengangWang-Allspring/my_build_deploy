@@ -1,4 +1,5 @@
 from colorama import Fore
+import boto3
 
 import subprocess
 import sys
@@ -126,8 +127,8 @@ def zip_artifacts(project: Project):
     )
     print(Fore.CYAN + '=' * 80 + Fore.RESET)
 
-    zip_base_name = f'{project.name}_{project.version}'
-    zip_base_name = Path.cwd().joinpath(settings.WORK_DIR).joinpath(zip_base_name).resolve()
+    print(f'project artifact_name: {project.artifact_name}')
+    zip_base_name = Path.cwd().joinpath(settings.WORK_DIR).joinpath(project.artifact_name).resolve()
     root_dir = Path.cwd().joinpath(settings.WORK_DIR).resolve()
 
     shutil.make_archive(zip_base_name, 'zip', root_dir, settings.WORK_BIN_DIR)
@@ -144,7 +145,7 @@ def extract_artifacts(project: Project):
     )
     print(Fore.CYAN + '=' * 80 + Fore.RESET)
 
-    zip_name = f'{project.name}_{project.version}.zip'
+    zip_name = f'{project.artifact_name}.zip'
     zip_name = Path.cwd().joinpath(settings.WORK_DIR).joinpath(zip_name).resolve()
     extract_dir = (
         Path.cwd().joinpath(settings.WORK_DIR).joinpath(settings.WORK_EXTRACT_DIR).resolve()
@@ -287,3 +288,38 @@ def deploy_files(project: Project, env: str):
         )
     print(Fore.CYAN + f'Copying from "{source_bin}" to "{deploy_path}" ... ' + Fore.RESET)
     shutil.copytree(source_bin, deploy_path, dirs_exist_ok=True)
+
+
+def upload_artifact(project: Project):
+    print(Fore.CYAN + '=' * 80 + Fore.RESET)
+    print(Fore.CYAN + f'Preparing to upload artifact: {project.artifact_name}.zip ...' + Fore.RESET)
+    print(Fore.CYAN + f'S3 bucket: {settings.ARTIFACT_S3_URL}' + Fore.RESET)
+    print(Fore.CYAN + '=' * 80 + Fore.RESET)
+
+    url = settings.ARTIFACT_S3_URL.replace('s3://', '')
+    bucket = url[: url.index('/')]
+    prefix = url[url.index('/') + 1 :]
+    s3_clt = boto3.client('s3')
+    reponse = s3_clt.list_objects_v2(
+        Bucket=bucket, Prefix=(prefix + project.artifact_name + '.zip')
+    )
+    contents = reponse.get('Contents')
+    if contents is None or len(contents) == 0:
+        # upload if artifact-name not exist
+        source_file_path = (
+            Path.cwd().joinpath(settings.WORK_DIR).joinpath(project.artifact_name + '.zip')
+        )
+        print(f'source_file_path: {source_file_path}')
+        s3 = boto3.resource('s3')
+        s3.meta.client.upload_file(
+            source_file_path, bucket, prefix + project.artifact_name + '.zip'
+        )
+
+    else:
+        raise FileExistsError(
+            f'Artifact name "{project.artifact_name}.zip" already exits on S3 bucket: {url}'
+        )
+
+
+def download_artifact(project: Project):
+    pass
