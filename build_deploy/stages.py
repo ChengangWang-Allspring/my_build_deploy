@@ -16,6 +16,31 @@ from build_deploy import config_core
 from build_deploy.config_core import Project, CicdConfig
 
 
+def check_duplicate_artifact(project: Project) -> bool:
+    """check if version-artifact exist"""
+    print(Fore.CYAN + '=' * 80 + Fore.RESET)
+    print(
+        Fore.CYAN
+        + f'Check if artifact of the same version already exist: {project.artifact_name}'
+        + Fore.RESET
+    )
+    print(Fore.CYAN + '=' * 80 + Fore.RESET)
+    if artifact_exist(project):
+        print(
+            Fore.RED
+            + 'This version of artifact exists on S3. To build, you need to either change the version in CICD.yml or remove the artifact manually from S3 bucket'
+            + Fore.RESET
+        )
+        url = settings.ARTIFACT_S3_URL.replace('s3://', '')
+        bucket = url[: url.index('/')]
+        prefix = url[url.index('/') + 1 :] + project.artifact_name + '.zip'
+        print(f'bucket: {bucket}')
+        print(f'prefix: {prefix}')
+        return True
+    else:
+        return False
+
+
 def build(project: Project) -> None:
     """build C# project"""
 
@@ -290,12 +315,7 @@ def deploy_files(project: Project, env: str):
     shutil.copytree(source_bin, deploy_path, dirs_exist_ok=True)
 
 
-def upload_artifact(project: Project):
-    print(Fore.CYAN + '=' * 80 + Fore.RESET)
-    print(Fore.CYAN + f'Preparing to upload artifact: {project.artifact_name}.zip ...' + Fore.RESET)
-    print(Fore.CYAN + f'S3 bucket: {settings.ARTIFACT_S3_URL}' + Fore.RESET)
-    print(Fore.CYAN + '=' * 80 + Fore.RESET)
-
+def artifact_exist(project: Project) -> bool:
     url = settings.ARTIFACT_S3_URL.replace('s3://', '')
     bucket = url[: url.index('/')]
     prefix = url[url.index('/') + 1 :]
@@ -304,8 +324,20 @@ def upload_artifact(project: Project):
         Bucket=bucket, Prefix=(prefix + project.artifact_name + '.zip')
     )
     contents = reponse.get('Contents')
-    if contents is None or len(contents) == 0:
+    return contents is not None and len(contents) > 0
+
+
+def upload_artifact(project: Project):
+    print(Fore.CYAN + '=' * 80 + Fore.RESET)
+    print(Fore.CYAN + f'Preparing to upload artifact: {project.artifact_name}.zip ...' + Fore.RESET)
+    print(Fore.CYAN + f'S3 bucket: {settings.ARTIFACT_S3_URL}' + Fore.RESET)
+    print(Fore.CYAN + '=' * 80 + Fore.RESET)
+
+    if not artifact_exist(project):
         # upload if artifact-name not exist
+        url = settings.ARTIFACT_S3_URL.replace('s3://', '')
+        bucket = url[: url.index('/')]
+        prefix = url[url.index('/') + 1 :]
         source_file_path = (
             Path.cwd().joinpath(settings.WORK_DIR).joinpath(project.artifact_name + '.zip')
         )
@@ -317,9 +349,33 @@ def upload_artifact(project: Project):
 
     else:
         raise FileExistsError(
-            f'Artifact name "{project.artifact_name}.zip" already exits on S3 bucket: {url}'
+            f'Artifact name "{project.artifact_name}.zip" already exists on S3 bucket: {url}'
         )
 
 
 def download_artifact(project: Project):
-    pass
+    print(Fore.CYAN + '=' * 80 + Fore.RESET)
+    print(
+        Fore.CYAN + f'Preparing to download artifact: {project.artifact_name}.zip ...' + Fore.RESET
+    )
+    print(Fore.CYAN + f'S3 bucket: {settings.ARTIFACT_S3_URL}' + Fore.RESET)
+    print(Fore.CYAN + '=' * 80 + Fore.RESET)
+
+    if artifact_exist(project):
+        # upload if artifact-name not exist
+        url = settings.ARTIFACT_S3_URL.replace('s3://', '')
+        bucket = url[: url.index('/')]
+        prefix = url[url.index('/') + 1 :]
+        target_file_path = (
+            Path.cwd().joinpath(settings.WORK_DIR).joinpath(project.artifact_name + '.zip')
+        )
+        print(f'target_file_path: {target_file_path}')
+        s3 = boto3.resource('s3')
+        s3.meta.client.download_file(
+            bucket, prefix + project.artifact_name + '.zip', target_file_path
+        )
+
+    else:
+        raise FileExistsError(
+            f'Artifact name "{project.artifact_name}.zip" NOT exist on S3 bucket: {url}'
+        )

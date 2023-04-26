@@ -30,9 +30,8 @@ def display_main_menu(menu) -> None:
     print('-' * 80)
     print(
         """ 
-  Welcome to build and deploy. This is a utility to build .NET applications, 
-  perform config transformation and deploy applications including ClickOnce 
-  project cicd workflow is defined in cicd.yml.  Please select a project below.
+  Welcome to build and deploy, a utility for .NET applications
+  Project cicd workflow specs are defined in cicd.yml.  
     """
     )
     print('-' * 80)
@@ -46,10 +45,62 @@ def press_to_continue() -> None:
     input('press to continue')
 
 
-def display_project_menu(project: Project) -> None:
-    env: str = None
+def display_build_deploy_menu(project: Project) -> None:
     while True:
-        print(Fore.CYAN + 'you have selected: ' + f' {project.name} ' + Fore.RESET)
+        system('cls')
+        print(Fore.GREEN + settings.LOGO)
+        print('-' * 80)
+        print(
+            Fore.GREEN
+            + 'You have selected the project: '
+            + Fore.RESET
+            + f'{project.name} ({project.version})'
+        )
+        print(Fore.GREEN + '-' * 80)
+        print(Fore.GREEN + '1: build')
+        print(Fore.GREEN + '2: deploy')
+        print(Fore.GREEN + '3: return to main menu')
+        print(Fore.RESET)
+        print(
+            Fore.CYAN + 'Select a number: ' + Fore.RESET,
+            end='',
+        )
+        selection: int = None
+        try:
+            str_input = input()
+            if str_input in ['q', 'exit', 'quit']:
+                return
+            selection = int(str_input)  # Get function key
+            if selection < 1 or selection > 3:
+                raise ValueError()
+        except ValueError:
+            print(Fore.RED + 'invalid selection!' + Fore.RESET)
+            continue
+
+        if selection == 3:
+            return
+        elif selection == 1:
+            build_project(project)
+        elif selection == 2:
+            deploy_project(project)
+
+
+def build_project(project: Project) -> None:
+    """start build workflows"""
+    print(
+        Fore.CYAN
+        + 'You have selected to build project: '
+        + Fore.RESET
+        + f'{project.name} ({project.version})'
+    )
+    press_to_continue()
+    build_deploy.start_build_workflows(project)
+    print(Fore.YELLOW + f'build completed!' + Fore.RESET)
+    press_to_continue()
+
+
+def deploy_project(project: Project) -> None:
+    while True:
         print(
             Fore.CYAN + 'Enter an environment [dev|uat|prod|bcp] (enter q to exit): ' + Fore.RESET,
             end='',
@@ -68,8 +119,8 @@ def display_project_menu(project: Project) -> None:
             prompt = input().lower()
             if prompt in ['yes', 'y']:
                 print(Fore.YELLOW + 'Please wait ... ' + Fore.RESET)
-                build_deploy.start_workflows(project, env)
-                print(Fore.YELLOW + f'{env} build & deploy completed!' + Fore.RESET)
+                build_deploy.start_deploy_workflows(project, env)
+                print(Fore.YELLOW + f'{env} deployment completed!' + Fore.RESET)
                 press_to_continue()
                 return
             else:
@@ -89,7 +140,7 @@ def run():
 
     while True:
         display_main_menu(menu_items)
-        print(Fore.CYAN + 'Select a number (enter q to exit): ' + Fore.RESET, end='')
+        print(Fore.CYAN + 'Select a project number (enter q to exit): ' + Fore.RESET, end='')
         selection = None
 
         try:
@@ -104,5 +155,5 @@ def run():
             press_to_continue()
             continue
 
-        project_name = menu_items[selection]  # Gets the project name
-        display_project_menu(project_name)
+        my_project = menu_items[selection]  # Gets the project name
+        display_build_deploy_menu(my_project)
