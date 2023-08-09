@@ -178,6 +178,13 @@ def extract_artifacts(project: Project):
     print(zip_name)
     print(extract_dir)
 
+    if extract_dir.exists():
+        print(f'removing {extract_dir}')
+        shutil.rmtree(extract_dir)
+
+    print(f'creating {extract_dir} ... ')
+    os.mkdir(extract_dir)
+
     shutil.unpack_archive(zip_name, extract_dir, 'zip')
 
 
