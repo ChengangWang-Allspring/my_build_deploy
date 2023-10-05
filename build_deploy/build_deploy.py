@@ -26,7 +26,7 @@ def start_build_workflows(project: Project) -> None:
         stages.zip_artifacts(project)
 
         """ upload artifact to artifactory """
-        # Furture use artifactory to replace S3 bucket
+        # Furture use artifactory to replace FSX share
         stages.upload_artifact(project)
 
     except Exception as e:
@@ -43,8 +43,8 @@ def start_deploy_workflows(project: Project, env: str) -> None:
     """deploy"""
 
     try:
-        """download artifact from S3"""
-        # Furture use artifactory to replace S3 bucket
+        """download artifact from FSX"""
+        # Furture use artifactory to replace FSX bucket
         stages.download_artifact(project)
 
         """ extract zip """

@@ -3,7 +3,7 @@ from enum import Enum, auto
 CICD_YML: str = 'cicd.yml'  # yaml config file
 MS_BUILD_PATH: str = r'C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\MSBuild\Current\Bin\MSBuild.exe'
 MS_BUILD_CLICKONCE_PATH: str = r'%WINDIR%\Microsoft.NET\Framework\v4.0.30319\msbuild.exe'
-ARTIFACT_S3_URL = 's3://s3-agtps01-use-dev/artifacts/'
+ARTIFACT_FSX_PATH = r'\\Applicationfs.awsad.allspringglobal.com\FUNFI\Build_Artifacts'
 
 """ workspace folders """
 WORK_DIR: str = '.cicd'  # temporary workspace folder

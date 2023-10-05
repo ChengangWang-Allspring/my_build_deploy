@@ -1,5 +1,4 @@
 from colorama import Fore
-import boto3
 
 import subprocess
 import sys
@@ -28,14 +27,11 @@ def check_duplicate_artifact(project: Project) -> bool:
     if artifact_exist(project):
         print(
             Fore.RED
-            + 'This version of artifact exists on S3. To build, you need to either change the version in CICD.yml or remove the artifact manually from S3 bucket'
+            + 'This version of artifact exists on FSX. To build, you need to either change the version in CICD.yml or remove the artifact manually from FSX '
             + Fore.RESET
         )
-        url = settings.ARTIFACT_S3_URL.replace('s3://', '')
-        bucket = url[: url.index('/')]
-        prefix = url[url.index('/') + 1 :] + project.artifact_name + '.zip'
-        print(f'bucket: {bucket}')
-        print(f'prefix: {prefix}')
+        print(f'artifact fsx path: {settings.ARTIFACT_FSX_PATH}')
+
         return True
     else:
         return False
@@ -323,40 +319,29 @@ def deploy_files(project: Project, env: str):
 
 
 def artifact_exist(project: Project) -> bool:
-    url = settings.ARTIFACT_S3_URL.replace('s3://', '')
-    bucket = url[: url.index('/')]
-    prefix = url[url.index('/') + 1 :]
-    s3_clt = boto3.client('s3')
-    reponse = s3_clt.list_objects_v2(
-        Bucket=bucket, Prefix=(prefix + project.artifact_name + '.zip')
-    )
-    contents = reponse.get('Contents')
-    return contents is not None and len(contents) > 0
+    zip_path = os.path.join(settings.ARTIFACT_FSX_PATH, project.artifact_name + '.zip')
+    return os.path.exists(zip_path)
 
 
 def upload_artifact(project: Project):
     print(Fore.CYAN + '=' * 80 + Fore.RESET)
     print(Fore.CYAN + f'Preparing to upload artifact: {project.artifact_name}.zip ...' + Fore.RESET)
-    print(Fore.CYAN + f'S3 bucket: {settings.ARTIFACT_S3_URL}' + Fore.RESET)
+    print(Fore.CYAN + f'Artifact FSX Path: {settings.ARTIFACT_FSX_PATH}' + Fore.RESET)
     print(Fore.CYAN + '=' * 80 + Fore.RESET)
 
     if not artifact_exist(project):
         # upload if artifact-name not exist
-        url = settings.ARTIFACT_S3_URL.replace('s3://', '')
-        bucket = url[: url.index('/')]
-        prefix = url[url.index('/') + 1 :]
+
         source_file_path = (
             Path.cwd().joinpath(settings.WORK_DIR).joinpath(project.artifact_name + '.zip')
         )
         print(f'source_file_path: {source_file_path}')
-        s3 = boto3.resource('s3')
-        s3.meta.client.upload_file(
-            source_file_path, bucket, prefix + project.artifact_name + '.zip'
-        )
+        dest_file_path = os.path.join(settings.ARTIFACT_FSX_PATH, project.artifact_name + '.zip')
+        shutil.copy2(source_file_path, dest_file_path)
 
     else:
         raise FileExistsError(
-            f'Artifact name "{project.artifact_name}.zip" already exists on S3 bucket: {url}'
+            f'Artifact name "{project.artifact_name}.zip" already exists on FSX share: {settings.ARTIFACT_FSX_PATH}'
         )
 
 
@@ -365,24 +350,20 @@ def download_artifact(project: Project):
     print(
         Fore.CYAN + f'Preparing to download artifact: {project.artifact_name}.zip ...' + Fore.RESET
     )
-    print(Fore.CYAN + f'S3 bucket: {settings.ARTIFACT_S3_URL}' + Fore.RESET)
+    print(Fore.CYAN + f'FSX Share: {settings.ARTIFACT_FSX_PATH}' + Fore.RESET)
     print(Fore.CYAN + '=' * 80 + Fore.RESET)
 
     if artifact_exist(project):
         # upload if artifact-name not exist
-        url = settings.ARTIFACT_S3_URL.replace('s3://', '')
-        bucket = url[: url.index('/')]
-        prefix = url[url.index('/') + 1 :]
+
         target_file_path = (
             Path.cwd().joinpath(settings.WORK_DIR).joinpath(project.artifact_name + '.zip')
         )
         print(f'target_file_path: {target_file_path}')
-        s3 = boto3.resource('s3')
-        s3.meta.client.download_file(
-            bucket, prefix + project.artifact_name + '.zip', target_file_path
-        )
+        source_file_path = os.path.join(settings.ARTIFACT_FSX_PATH, project.artifact_name + '.zip')
+        shutil.copy2(source_file_path, target_file_path)
 
     else:
         raise FileExistsError(
-            f'Artifact name "{project.artifact_name}.zip" NOT exist on S3 bucket: {url}'
+            f'Artifact name "{project.artifact_name}.zip" NOT exist on FSX Share: {settings.ARTIFACT_FSX_PATH}'
         )
