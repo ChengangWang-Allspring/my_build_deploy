@@ -186,7 +186,7 @@ def extract_artifacts(project: Project):
 
 def transform_config(env: str):
     print(Fore.CYAN + '=' * 80 + Fore.RESET)
-    print(Fore.CYAN + f'Starting configuration transformation for: {env} ...' + Fore.RESET)
+    print(Fore.CYAN + f'Starting "Config Transform" for: {env} ...' + Fore.RESET)
     print(Fore.CYAN + '=' * 80 + Fore.RESET)
 
     bin_path = (
@@ -196,6 +196,15 @@ def transform_config(env: str):
         .joinpath(settings.WORK_BIN_DIR)
     )
     config_path = bin_path.joinpath('Config')
+    if not config_path.exists():
+        print(Fore.YELLOW + '=' * 80 + Fore.RESET)
+        print(
+            Fore.YELLOW
+            + f'WARNING: "Config" directory does not exist!! "Config Transform" skipped ...'
+            + Fore.RESET
+        )
+        print(Fore.YELLOW + '=' * 80 + Fore.RESET)
+        return
 
     exe_config_path = bin_path.joinpath('*.exe.config').resolve()
     exe_config_file = None
