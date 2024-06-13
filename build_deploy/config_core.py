@@ -8,8 +8,10 @@ from build_deploy import settings
 
 class DeployPath(BaseModel):
     dev: str
+    dev2: Optional[str]
     uat: str
     prod: str
+    prod2: Optional[str]
     bcp: str
 
 

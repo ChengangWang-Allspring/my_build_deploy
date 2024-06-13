@@ -102,13 +102,13 @@ def build_project(project: Project) -> None:
 def deploy_project(project: Project) -> None:
     while True:
         print(
-            Fore.CYAN + 'Enter an environment [dev|uat|prod|bcp] (enter q to exit): ' + Fore.RESET,
+            Fore.CYAN + 'Enter an environment [dev|dev2|uat|prod|prod2|bcp] (enter q to exit): ' + Fore.RESET,
             end='',
         )
         env = input().lower()
         if env in ['q', 'exit', 'quit']:
             return
-        if env not in ['dev', 'uat', 'prod', 'bcp']:
+        if env not in ['dev', 'dev2', 'uat', 'prod', 'prod2','bcp']:
             print(
                 Fore.RED + 'wrong environment. Must be one of these dev|uat|prod|bcp.' + Fore.RESET
             )
